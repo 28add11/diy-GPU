@@ -52,29 +52,75 @@ def displayTriangles(screen, vecArray, indexArrayIn, triCount):
 
 		while triBufferCount > 0: # In hardware is just ORs (UNSIGNED)
 
-			clippedVertices = 0
+			goodToRender = True
+			vertices = triBuffer[triBufferCount - 1] # Get the current triangle vertices
+
 
 			for plane in range(6): 
+				clippedVertices = 0
 				#vertexCoords = vecArray[j - 1]
 				#x, y, z, w = vertexCoords[0], vertexCoords[1], vertexCoords[2], vertexCoords[3]
 
 				if (plane & 0x01) == 1: # Odd
-					planeCoords =
+					planeCoords = [-vertices[0][plane >> 1], -vertices[1][plane >> 1], -vertices[2][plane >> 1]]
+				else:
+					planeCoords = [vertices[0][plane >> 1], vertices[1][plane >> 1], vertices[2][plane >> 1]]
 
-
-				if not (w - x > 0 and w + x > 0 and w - y > 0 and w + y > 0 and w - z > 0 and w + z > 0):
+				v0delta = vertices[0][3] + planeCoords[0]
+				if v0delta < 0:
 					clippedVertices += 1
-					break
 
-			if clippedVertices == 0:
-				vec1 = normalizeVec(vecArray[vertices[0] - 1])
+				v1delta = vertices[1][3] + planeCoords[1]
+				if v1delta < 0:
+					clippedVertices += 1
+
+				v2delta = vertices[2][3] + planeCoords[2]
+				if v2delta < 0:
+					clippedVertices += 1
+
+				if clippedVertices == 3: # All vertices are clipped, skip this triangle
+					goodToRender = False
+					break # State machine transition to next tri
+
+				elif clippedVertices == 2: # Simple new tri with verts at intersections
+					if v0delta > 0:
+						a = v0delta / (v0delta - v1delta)
+						point1xA = [j * (1 - a) for j in vertices[0]]
+						point2xA = [j * a for j in vertices[1]]
+						vertices[1] = [point1xA[j] + point2xA[j] for j in range(4)]
+						a = v0delta / (v0delta - v2delta)
+						point2xA = [j * a for j in vertices[2]]
+						vertices[2] = [point1xA[j] + point2xA[j] for j in range(4)]
+					elif v1delta > 0:
+						a = v1delta / (v1delta - v0delta)
+						point1xA = [j * (1 - a) for j in vertices[1]]
+						point2xA = [j * a for j in vertices[0]]
+						vertices[0] = [point1xA[j] + point2xA[j] for j in range(4)]
+						a = v1delta / (v1delta - v2delta)
+						point2xA = [j * a for j in vertices[2]]
+						vertices[2] = [point1xA[j] + point2xA[j] for j in range(4)]
+					elif v2delta > 0:
+						a = v2delta / (v2delta - v1delta)
+						point1xA = [j * (1 - a) for j in vertices[2]]
+						point2xA = [j * a for j in vertices[1]]
+						vertices[1] = [point1xA[j] + point2xA[j] for j in range(4)]
+						a = v0delta / (v0delta - v2delta)
+						point2xA = [j * a for j in vertices[0]]
+						vertices[0] = [point1xA[j] + point2xA[j] for j in range(4)]
+
+				elif clippedVertices == 1: # Hard two new tris
+					goodToRender = False
+					break #temp "do not render"
+
+			if goodToRender:
+				vec1 = normalizeVec(vertices[0])
 				vec1.x = (vec1.x + 1) * (640 / 2) # To raster space
 				vec1.y = (vec1.y + 1) * (480 / 2)
-				vec2 = normalizeVec(vecArray[vertices[1] - 1])
-				vec2.x = (vec2.x + 1) * (640 / 2) # To raster space
+				vec2 = normalizeVec(vertices[1])
+				vec2.x = (vec2.x + 1) * (640 / 2)# To raster space
 				vec2.y = (vec2.y + 1) * (480 / 2)
-				vec3 = normalizeVec(vecArray[vertices[2] - 1])
-				vec3.x = (vec3.x + 1) * (640 / 2) # To raster space
+				vec3 = normalizeVec(vertices[2])
+				vec3.x = (vec3.x + 1) * (640 / 2)# To raster space
 				vec3.y = (vec3.y + 1) * (480 / 2)
 				tri = triangle.Triangle3d(vec1,
 										  vec2,
@@ -89,6 +135,7 @@ def displayTriangles(screen, vecArray, indexArrayIn, triCount):
 				area = triangle.edgeFunction(tri.p1, tri.p3, edge0.x, edge0.y)
 
 				if area <= 0: # Simple and stupid back face culling
+					triBufferCount -= 1
 					continue
 
 				p1 = pygame.math.Vector2(min(tri.p1.x, tri.p2.x, tri.p3.x),
@@ -138,6 +185,8 @@ def displayTriangles(screen, vecArray, indexArrayIn, triCount):
 					w0Row += deltaXw0
 					w1Row += deltaXw1
 					w2Row += deltaXw2
+
+			triBufferCount -= 1
 
 
 
