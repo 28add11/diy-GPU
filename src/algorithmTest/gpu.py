@@ -35,13 +35,57 @@ def normalizeVec(vec : list[float]) -> pygame.math.Vector3:
 
 	return finalResult
 
+def singleVertClipInterpolate(verts, deltas, insideInd):
+	insideDelta = deltas[insideInd]
+	insideVert =  verts[insideInd]
+
+	currentInd = insideInd 
+	nextIndList = [1, 2, 0]
+	for i in range(2):
+		currentInd = nextIndList[currentInd] # Better pattern for hardware, effectively LUT
+
+		outsideDelta = deltas[currentInd]
+		outsideVert = verts[currentInd]
+
+		a = insideDelta / (insideDelta - outsideDelta)
+		insidePointxA = [j * (1 - a) for j in insideVert] # All of these list comps are just element-wise ops
+		outsidePointxA = [j * a for j in outsideVert]
+		verts[currentInd] = [insidePointxA[j] + outsidePointxA[j] for j in range(4)] # Replace original vert
+
+def twoVertClipInterpolate(verts, extraTriBuffer, extraTriBufferInd, deltas, outsideInd):
+	outsideDelta = deltas[outsideInd]
+	outsideVert = verts[outsideInd]
+	generatedVertBuffer = [[0 for i in range(4)] for j in range(2)]
+
+	currentInd = outsideInd
+	nextIndList = [1, 2, 0]
+	for i in range(2): # Vertex gen loop
+		currentInd = nextIndList[currentInd] # Better pattern for hardware, effectively LUT
+
+		insideDelta = deltas[currentInd]
+		insideVert = verts[currentInd]
+
+		a = insideDelta / (insideDelta - outsideDelta)
+		insidePointxA = [j * (1 - a) for j in insideVert] # All of these list comps are just element-wise ops
+		outsidePointxA = [j * a for j in outsideVert]
+		for j in range(4):
+			newPoint = insidePointxA[j] + outsidePointxA[j]
+			newPoint = round(newPoint, 10)
+			generatedVertBuffer[i][j] = newPoint # We want to use i here since its a generated buffer thing
+
+	currentInd = nextIndList[outsideInd]
+	
+	# currentInd is vertex B (per https://www.gabrielgambetta.com/computer-graphics-from-scratch/11-clipping.html)
+	extraTriBuffer[extraTriBufferInd] = [generatedVertBuffer[0], verts[currentInd], generatedVertBuffer[1]] # Tri A`BB`
+	verts[outsideInd] = generatedVertBuffer[1] # Tri ABA` (we will render this tri fully first)
+
+
 def displayTriangles(screen, vecArray, indexArrayIn, triCount):
 
 	# De-index tris first and push them in this buffer
 	# 9 is the max number of generated verts in a worst case senario clipping (+ 3 for og tri) but RTL for indexing into these would be horribly innefficient
 	triBuffer = [[[0 for i in range(4)] for j in range(3)] for k in range(8)] # 7 tris at most (+ 1 og tri again)
 	triBufferCount = 0
-
 
 	for i in range(triCount):
 
@@ -54,6 +98,7 @@ def displayTriangles(screen, vecArray, indexArrayIn, triCount):
 
 			goodToRender = True
 			vertices = triBuffer[triBufferCount - 1] # Get the current triangle vertices
+			triBufferCount -= 1
 
 
 			for plane in range(6): 
@@ -84,33 +129,22 @@ def displayTriangles(screen, vecArray, indexArrayIn, triCount):
 
 				elif clippedVertices == 2: # Simple new tri with verts at intersections
 					if v0delta > 0:
-						a = v0delta / (v0delta - v1delta)
-						point1xA = [j * (1 - a) for j in vertices[0]]
-						point2xA = [j * a for j in vertices[1]]
-						vertices[1] = [point1xA[j] + point2xA[j] for j in range(4)]
-						a = v0delta / (v0delta - v2delta)
-						point2xA = [j * a for j in vertices[2]]
-						vertices[2] = [point1xA[j] + point2xA[j] for j in range(4)]
+						singleVertClipInterpolate(vertices, [v0delta, v1delta, v2delta], 0)
 					elif v1delta > 0:
-						a = v1delta / (v1delta - v0delta)
-						point1xA = [j * (1 - a) for j in vertices[1]]
-						point2xA = [j * a for j in vertices[0]]
-						vertices[0] = [point1xA[j] + point2xA[j] for j in range(4)]
-						a = v1delta / (v1delta - v2delta)
-						point2xA = [j * a for j in vertices[2]]
-						vertices[2] = [point1xA[j] + point2xA[j] for j in range(4)]
+						singleVertClipInterpolate(vertices, [v0delta, v1delta, v2delta], 1)
 					elif v2delta > 0:
-						a = v2delta / (v2delta - v1delta)
-						point1xA = [j * (1 - a) for j in vertices[2]]
-						point2xA = [j * a for j in vertices[1]]
-						vertices[1] = [point1xA[j] + point2xA[j] for j in range(4)]
-						a = v0delta / (v0delta - v2delta)
-						point2xA = [j * a for j in vertices[0]]
-						vertices[0] = [point1xA[j] + point2xA[j] for j in range(4)]
+						singleVertClipInterpolate(vertices, [v0delta, v1delta, v2delta], 2)
 
 				elif clippedVertices == 1: # Hard two new tris
-					goodToRender = False
-					break #temp "do not render"
+					if v0delta < 0:
+						twoVertClipInterpolate(vertices, triBuffer, triBufferCount, [v0delta, v1delta, v2delta], 0)
+						triBufferCount += 1
+					elif v1delta < 0:
+						twoVertClipInterpolate(vertices, triBuffer, triBufferCount, [v0delta, v1delta, v2delta], 1)
+						triBufferCount += 1
+					elif v2delta < 0:
+						twoVertClipInterpolate(vertices, triBuffer, triBufferCount, [v0delta, v1delta, v2delta], 2)
+						triBufferCount += 1
 
 			if goodToRender:
 				vec1 = normalizeVec(vertices[0])
@@ -135,7 +169,6 @@ def displayTriangles(screen, vecArray, indexArrayIn, triCount):
 				area = triangle.edgeFunction(tri.p1, tri.p3, edge0.x, edge0.y)
 
 				if area <= 0: # Simple and stupid back face culling
-					triBufferCount -= 1
 					continue
 
 				p1 = pygame.math.Vector2(min(tri.p1.x, tri.p2.x, tri.p3.x),
@@ -185,9 +218,6 @@ def displayTriangles(screen, vecArray, indexArrayIn, triCount):
 					w0Row += deltaXw0
 					w1Row += deltaXw1
 					w2Row += deltaXw2
-
-			triBufferCount -= 1
-
 
 
 def projectVertices(inVert, outVert, projMat):
