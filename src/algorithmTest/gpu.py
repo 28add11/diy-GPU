@@ -1,13 +1,20 @@
 import pygame
 import triangle
 
-# matricies are defined [row][column] (row major order)
+# matricies are defined [row][column] (row major order in memory)
 
+def fourxfourmatmul(mat1, mat2, destMat):
+	for row in range(4):
+		for column in range(4):
+			sum = 0.0
+			for num in range(4):
+				sum += mat1[row][num] * mat2[num][column]
+			destMat[row][column] = sum
 
 def multVecMatrix(matrix : list[list[float]], vec : pygame.math.Vector3) -> list[float]:
 	"""
 	Multiplies a 4x4 matrix by a 3D vector (w coord is set to 1 implicitly).
-	Row major order, with vectors treated as 4x1 matrices (as if they're to the left of the multiplication sign)
+	Column major order, with vectors treated as 1x4 matrices (as if they're to the right of the multiplication sign/Post-multiplied)
 	Returns a new 4D vector with w coordinate.
 	"""
 

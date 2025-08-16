@@ -20,14 +20,6 @@ def create_perspective_projection_matrix(fov, near_plane, far_plane):
 		[0, 0, -((2 * far_plane * near_plane) / (far_plane - near_plane)), 0]
 	]
 
-def fourxfourmatmul(mat1, mat2, destMat):
-	for row in range(4):
-		for column in range(4):
-			sum = 0.0
-			for num in range(4):
-				sum += mat1[row][num] * mat2[num][column]
-			destMat[row][column] = sum
-
 pygame.init()
 screen = pygame.display.set_mode((640, 480))
 clock = pygame.time.Clock()
@@ -72,13 +64,13 @@ while running:
 	
 	keys = pygame.key.get_pressed()
 	if keys[pygame.K_w]:
-		worldToCamMat[3][2] -= 0.1
-	if keys[pygame.K_s]:
 		worldToCamMat[3][2] += 0.1
+	if keys[pygame.K_s]:
+		worldToCamMat[3][2] -= 0.1
 	if keys[pygame.K_a]:
-		worldToCamMat[3][0] -= 0.1
-	if keys[pygame.K_d]:
 		worldToCamMat[3][0] += 0.1
+	if keys[pygame.K_d]:
+		worldToCamMat[3][0] -= 0.1
 	if keys[pygame.K_q]:
 		worldToCamMat[3][1] += 0.1
 	if keys[pygame.K_e]:
@@ -87,7 +79,7 @@ while running:
 	screen.fill((0, 0, 0))
 
 	projMat = create_perspective_projection_matrix(90, 0.1, 1000)
-	fourxfourmatmul(worldToCamMat, projMat, projMat)
+	gpu.fourxfourmatmul(worldToCamMat, projMat, projMat)
 
 	gpu.projectVertices(vertices, transformedVerts, projMat)
 
