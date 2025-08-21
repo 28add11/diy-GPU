@@ -1,7 +1,7 @@
 `default_nettype none
 
 module matrixProcessor #(
-	parameters
+	parameter WIDTH = 32
 ) (
 	input wire clk,
 	input wire rst_n,
@@ -18,65 +18,49 @@ module matrixProcessor #(
 	output wire writeEn
 	);
 
-	reg [13:0] workItemReg;
-	reg [3:0] matrixReg
+	wire wiSource, wiInit;
+	wire workItemCountZero;
+	wire [3:0] matrixRegValue;
+	wire resetMatrixReg, matrixRegIncrument;
+	wire load, loadMatrix, loadVector;
 
-	reg [WIDTH - 1:0] matrixCache [3:0]; // 4x4 matrix cache (Implemented as 1D array because IIRC some tools have compatability issues)
+	matrixProcessorDatapath #(.WIDTH(WIDTH)) datapath (
+		.clk(clk),
+		.rst_n(rst_n),
+		.start(start),
+		.wiSource(wiSource),
+		.wiInit(wiInit),
+		.resetMatrixReg(resetMatrixReg),
+		.matrixRegIncrument(matrixRegIncrument),
+		.workItemCount(workItemCount),
+		.matrixInAddr(matrixInAddr),
+		.dataInAddr(dataInAddr),
+		.dataOutAddr(dataOutAddr),
+		.dataIn(dataIn),
+		.readAddr(readAddr),
+		.writeAddr(writeAddr),
+		.writeData(writeData),
+		.workItemCountZero(workItemCountZero),
+		.matrixRegValue(matrixRegValue),
+		.load(load),
+		.loadMatrix(loadMatrix),
+		.loadVector(loadVector)
+	);
 
-	typedef enum logic [1:0] {IDLE, LOADMATRIX, PROCESSING} statetype;
-	statetype state, nextstate;
-	
-	assign readAddr = matrixInAddr + matrixReg;
-
-	always_comb begin
-		case (state)
-			IDLE: begin
-				if (start) nextstate = LOADMATRIX;
-				else 	   nextstate = IDLE;
-			end
-
-			LOADMATRIX: begin
-				if (matrixReg == 4'hF) nextstate = PROCESSING;
-				else 				   nextstate = LOADMATRIX;
-			end
-
-			PROCESSING: begin
-				if (workItemReg == 0) nextstate = IDLE;
-				else 				  nextstate = PROCESSING;
-			end
-
-			default: nextstate = IDLE
-		endcase
-	end
-
-	always_ff @(posedge clk) begin
-		if (~rst_n) begin
-			state <= IDLE;
-
-		end else begin
-			state <= nextstate;
-
-			if (state == IDLE) begin
-				
-				if (start) begin
-					matrixReg <= 4'b0;
-					workItemReg <= workItemCount;
-				end
-
-			end else if (state == LOADMATRIX) begin
-				matrixReg <= matrixReg + 1;
-				matrixCache[matrixReg] <= dataIn;
-
-			end else if (state == PROCESSING) begin
-
-				matrixReg <= matrixReg + 1;
-
-				if (matrixReg == 4'hF) begin
-					workItemReg <= workItemReg - 1;
-				end
-
-			end
-		end
-	end
+	matrixProcessorController controller (
+		.clk(clk),
+		.rst_n(rst_n),
+		.start(start),
+		.workItemCountZero(workItemCountZero),
+		.matrixRegValue(matrixRegValue),
+		.matrixRegIncrument(matrixRegIncrument),
+		.writeEn(writeEn),
+		.wiSource(wiSource),
+		.wiInit(wiInit),
+		.load(load),
+		.loadMatrix(loadMatrix),
+		.loadVector(loadVector),
+		.resetMatrixReg(resetMatrixReg),
+	);
 
 endmodule
