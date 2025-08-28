@@ -1,8 +1,6 @@
 `default_nettype none
 
-module addrCombiner #(
-
-) (
+module addrCombiner (
 	input wire [3:0] a,
 	input wire [13:0] b,
 	input wire [WIDTH - 1:0] base,

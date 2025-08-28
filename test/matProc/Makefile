@@ -4,7 +4,7 @@ include ../common.mk
 
 # defaults
 SRC_DIR = $(PWD)/../../src/HDL/matrixProcessor/
-PROJECT_SOURCES = matProc.sv datapath.sv control.sv
+PROJECT_SOURCES = matProc.sv datapath.sv control.sv arithmetic.sv
 
 # RTL simulation:
 VERILOG_SOURCES += $(addprefix $(SRC_DIR)/,$(PROJECT_SOURCES))

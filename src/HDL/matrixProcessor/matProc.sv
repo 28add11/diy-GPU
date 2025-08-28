@@ -23,6 +23,8 @@ module matrixProcessor #(
 	wire [3:0] matrixRegValue;
 	wire resetMatrixReg, matrixRegIncrument;
 	wire load, loadMatrix, loadVector;
+	wire readAddrSrc;
+	wire enFMA;
 
 	matrixProcessorDatapath #(.WIDTH(WIDTH)) datapath (
 		.clk(clk),
@@ -44,7 +46,9 @@ module matrixProcessor #(
 		.matrixRegValue(matrixRegValue),
 		.load(load),
 		.loadMatrix(loadMatrix),
-		.loadVector(loadVector)
+		.loadVector(loadVector),
+		.readAddrSrc(readAddrSrc),
+		.enFMA(enFMA)
 	);
 
 	matrixProcessorController controller (
@@ -61,6 +65,8 @@ module matrixProcessor #(
 		.loadMatrix(loadMatrix),
 		.loadVector(loadVector),
 		.resetMatrixReg(resetMatrixReg),
+		.readAddrSrc(readAddrSrc),
+		.enFMA(enFMA)
 	);
 
 endmodule

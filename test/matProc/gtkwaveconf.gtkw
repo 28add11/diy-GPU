@@ -1,0 +1,37 @@
+[*]
+[*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
+[*] Thu Aug 28 07:12:21 2025
+[*]
+[dumpfile] "C:\Users\kerba\Documents\Programs\diy-GPU\test\matProc\tb.fst"
+[dumpfile_mtime] "Thu Aug 28 03:13:12 2025"
+[dumpfile_size] 1967
+[savefile] "C:\Users\kerba\Documents\Programs\diy-GPU\test\matProc\gtkwaveconf.gtkw"
+[timestart] 197500
+[size] 1920 1009
+[pos] -1 -1
+*-15.000000 410000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb.
+[treeopen] tb.mp.
+[sst_width] 197
+[signals_width] 317
+[sst_expanded] 1
+[sst_vpaned_height] 297
+@28
+tb.mp.controller.clk
+tb.mp.controller.rst_n
+tb.mp.controller.state[1:0]
+@22
+tb.mp.datapath.matrixReg[3:0]
+@28
+tb.start
+@22
+tb.mp.datapath.workItemReg[13:0]
+tb.mp.datapath.loadAddrPipeline[31:0]
+tb.mp.datapath.debug[31:0]
+@28
+tb.mp.datapath.dataConsumePipeline
+tb.mp.datapath.readAddrSrc
+@23
+tb.mp.datapath.readAddr[31:0]
+[pattern_trace] 1
+[pattern_trace] 0

@@ -1,7 +1,7 @@
 `default_nettype none
 
 module fuseMultAdd #(
-	parameters
+	parameter WIDTH = 32
 ) (
 	input wire clk,
 	input wire rst_n,
@@ -12,9 +12,7 @@ module fuseMultAdd #(
 	input wire [WIDTH - 1:0] seed,
 	// Control signals
 	input wire updateAccumulator,
-	input wire inputGood,
-	output wire inReady,
-	output wire outGood
+	input wire en
 );
 	
 	reg [WIDTH - 1:0] accumulator;
@@ -24,19 +22,15 @@ module fuseMultAdd #(
 	wire [(2 * WIDTH) - 1:0] product;
 	assign product = a * b;
 
-	reg outGoodReg;
-	assign inReady <= 1;
+	wire [WIDTH - 1:0] accumulatorSrc;
+	assign accumulatorSrc = (updateAccumulator) ? seed : accumulator;
 
 	always @(posedge clk) begin
 		if (~rst_n) begin
 			accumulator <= 0;
-			outGoodReg <= 0;
 		end else begin
-			if (updateAccumulator) begin
-				accumulator <= seed;
-			end else if (inputGood) begin
-				accumulator <= accumulator + product;
-				outGoodReg <= 1;
+			if (en) begin
+				accumulator <= accumulatorSrc + product;
 			end
 		end
 	end
