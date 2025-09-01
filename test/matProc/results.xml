@@ -1,6 +1,6 @@
 <testsuites name="results">
   <testsuite name="all" package="all">
-    <property name="random_seed" value="1756350792" />
-    <testcase name="test" classname="test" file="/mnt/c/Users/kerba/Documents/Programs/diy-GPU/test/matProc/test.py" lineno="27" time="0.02494072914123535" sim_time_ns="470.001" ratio_time="18844.71770405988" />
+    <property name="random_seed" value="1756700530" />
+    <testcase name="test" classname="test" file="/mnt/c/Users/kerba/Documents/Programs/diy-GPU/test/matProc/test.py" lineno="31" time="0.0216372013092041" sim_time_ns="570.001" ratio_time="26343.564116932772" />
   </testsuite>
 </testsuites>

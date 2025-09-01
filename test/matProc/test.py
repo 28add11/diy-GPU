@@ -6,27 +6,31 @@ import cocotb
 from cocotb.clock import Clock
 import cocotb.triggers
 
+@cocotb.coroutine
 async def memoryCorutine(dut):
 	matrixData = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
 	vectorData = [1, 1, 10, 1, 2, 2, 10, 1, 0, 0, 10, 1]
 	
 	while True:
-		try:
-			await cocotb.triggers.RisingEdge(dut.clk)
+		await cocotb.triggers.RisingEdge(dut.clk)
+		if (dut.readAddr.value.is_resolvable):
 			if (dut.readAddr.value.integer >= 0x8000 and dut.readAddr.value.integer <= 0x803C and dut.readAddr.value.integer & 0x3 == 0):
 				dut.dataIn.value = matrixData[(dut.readAddr.value - 0x8000) >> 2]
 			elif (dut.readAddr.value.integer >= 0xF000 and dut.readAddr.value.integer <= 0xF02C and dut.readAddr.value.integer & 0x3 == 0):
 				dut.dataIn.value = vectorData[(dut.readAddr.value - 0xF000) >> 2]
 			else:
 				dut.dataIn.value = 0xDEADBEEF
-		except IndexError:
-			raise IndexError
-		except:
-			continue
+		
+		if (dut.writeEn.value.is_resolvable):
+			if (dut.writeEn.value == 1):
+				if (dut.writeAddr.value.is_resolvable):
+					dut.log.info("Write at " + str(dut.writeAddr.value.integer) + " of " + str(dut.writeData.value.integer))
+				else:
+					dut.log.error("Write requested with bad values")
 
 @cocotb.test()
 async def test(dut):
-	dut._log.info("Start")
+	dut.log.info("Start")
 
 	cocotb.start_soon(memoryCorutine(dut))
 
@@ -35,7 +39,7 @@ async def test(dut):
 	cocotb.start_soon(clock.start())
 
 	# Reset
-	dut._log.info("Reset")
+	dut.log.info("Reset")
 	dut.reset.value = 0
 	dut.start.value = 0
 	dut.workItemCount.value = 2
@@ -45,7 +49,7 @@ async def test(dut):
 	await cocotb.triggers.ClockCycles(dut.clk, 10)
 	dut.reset.value = 1
 
-	dut._log.info("Test project behavior")
+	dut.log.info("Test project behavior")
 
 	await cocotb.triggers.ClockCycles(dut.clk, 10) # matproc should be in idle
 
@@ -61,4 +65,4 @@ async def test(dut):
 
 	assert dut.mp.controller.state.value.integer == 2
 
-	await cocotb.triggers.ClockCycles(dut.clk, 10)
+	await cocotb.triggers.ClockCycles(dut.clk, 20)

@@ -16,6 +16,7 @@ module matrixProcessorDatapath #(
 	input wire loadVector,
 	input wire readAddrSrc,
 	input wire enFMA,
+	input wire controllerWriteEn,
 
 	input wire [13:0] workItemCount, // > 10k, about the number of verts we want to push per frame. Feel free to raise once I get actual performance numbers on this
 	input wire [WIDTH - 1:0] matrixInAddr, // Presuming these are registered because of AXI???
@@ -26,7 +27,8 @@ module matrixProcessorDatapath #(
 	output wire [WIDTH - 1:0] writeAddr,
 	output wire [WIDTH - 1:0] writeData,
 	output wire workItemCountZero,
-	output wire [3:0] matrixRegValue
+	output wire [3:0] matrixRegValue,
+	output wire writeEn
 	);
 
 	reg [13:0] workItemReg;
@@ -41,6 +43,11 @@ module matrixProcessorDatapath #(
 	reg loadMatrixPipeline;
 	reg loadVectorPipeline;
 
+	reg writeEnPipeline;
+	wire updateAccumulator;
+	reg updateAccumulatorPipeline;
+	assign updateAccumulator = (matrixReg[1:0] == 0);
+
 	reg [WIDTH - 1:0] matrixCache [15:0]; // 4x4 matrix cache (Implemented as 1D array because IIRC some tools have compatability issues)
 	reg [WIDTH - 1:0] vectorCache [3:0]; // 1x4 vector
 	reg [WIDTH - 1:0] matrixReadReg;
@@ -53,6 +60,8 @@ module matrixProcessorDatapath #(
 
 	assign readAddr = (readAddrSrc ? (dataInAddr) : matrixInAddr) + (readAddrSrc ? (vectorReadIndex << 2) : (matrixReg << 2));
 	assign writeAddr = dataOutAddr + vectorWriteIndex;
+
+	assign writeEn = writeEnPipeline;
 
 	assign workItemCountZero = (workItemReg == 0);
 	assign matrixRegValue = matrixReg;
@@ -67,7 +76,7 @@ module matrixProcessorDatapath #(
 		.b(vectorReadReg),
 		.accumulatorOut(writeData),
 		.seed(0),
-		.updateAccumulator(matrixReg[1:0] == 0),
+		.updateAccumulator(updateAccumulatorPipeline),
 		.en(enFMA)
 	);
 
@@ -104,6 +113,8 @@ module matrixProcessorDatapath #(
 				vectorCache[matrixRegPipeline] <= dataIn;
 			end
 			
+			writeEnPipeline <= controllerWriteEn;
+			updateAccumulatorPipeline <= updateAccumulator;
 
 			matrixReadReg <= matrixCache[matrixReg];
 			vectorReadReg <= vectorCache[matrixReg[1:0]];

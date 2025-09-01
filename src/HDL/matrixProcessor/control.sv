@@ -85,7 +85,7 @@ module matrixProcessorController (
 				else 				   nextstate = PROCESSING;
 
 				wiSource = (matrixRegValue[1:0] == 4'hF);
-				writeEn = (matrixRegValue[1:0] == 4'hF);
+				writeEn = (matrixRegValue[1:0] == 2'h3);
 				load = 0;
 				loadMatrix = 0;
 				loadVector = 0;
