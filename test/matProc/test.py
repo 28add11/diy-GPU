@@ -6,10 +6,27 @@ import cocotb
 from cocotb.clock import Clock
 import cocotb.triggers
 
+from random import randint
+
+def multVecMatrix(matrix, vec):
+	"""
+	Multiplies a 4x4 matrix by a 3D vector.
+	Column major order, with vectors treated as 1x4 matrices (as if they're to the right of the multiplication sign/Post-multiplied)
+	Returns a new 4D vector with w coordinate.
+	"""
+
+	listResult = [0.0 for i in range(4)]
+	listResult[0] = matrix[0][0] * vec[0] + matrix[1][0] * vec[1] + matrix[2][0] * vec[2] + matrix[3][0] * vec[3]
+	listResult[1] = matrix[0][1] * vec[0] + matrix[1][1] * vec[1] + matrix[2][1] * vec[2] + matrix[3][1] * vec[3]
+	listResult[2] = matrix[0][2] * vec[0] + matrix[1][2] * vec[1] + matrix[2][2] * vec[2] + matrix[3][2] * vec[3]
+	listResult[3] = matrix[0][3] * vec[0] + matrix[1][3] * vec[1] + matrix[2][3] * vec[2] + matrix[3][3] * vec[3]
+
+	return listResult
+
 @cocotb.coroutine
 async def memoryCorutine(dut):
 	matrixData = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
-	vectorData = [1, 1, 10, 1, 2, 2, 10, 1, 0, 0, 10, 1]
+	vectorData = [1, 1, 10, 1]
 	
 	while True:
 		await cocotb.triggers.RisingEdge(dut.clk)
@@ -32,7 +49,7 @@ async def memoryCorutine(dut):
 async def test(dut):
 	dut.log.info("Start")
 
-	cocotb.start_soon(memoryCorutine(dut))
+	#cocotb.start_soon(memoryCorutine(dut))
 
 	# Set the clock period to 10 ns (100 MHz)
 	clock = Clock(dut.clk, 10, units="ns")
@@ -42,7 +59,7 @@ async def test(dut):
 	dut.log.info("Reset")
 	dut.reset.value = 0
 	dut.start.value = 0
-	dut.workItemCount.value = 2
+	dut.workItemCount.value = 0 # Just means 1 item, should change in later rev
 	dut.matrixInAddr.value = 0x8000
 	dut.dataInAddr.value = 0xF000
 	dut.dataOutAddr.value = 0
@@ -56,7 +73,44 @@ async def test(dut):
 	assert dut.mp.controller.state.value.integer == 0
 
 	dut.start.value = 1
+
+	matrixData = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+	vectorData = [1, 1, 10, 1]
 	
+	for randTestCase in range(2):
+
+		for j in range(4): # Row
+			for i in range(4): # Column
+				matrixData[j][i] = randint(-(2**16), 2**16)
+		
+		for i in range(4):
+			vectorData[i] = randint(-(2**16), 2**16)
+
+		dut.start.value = 1 # We never set this to zero but its good
+		await cocotb.triggers.ClockCycles(dut.clk, 1)
+
+		while dut.mp.controller.state.value.integer != 0:
+
+			if (dut.readAddr.value.is_resolvable):
+				if (dut.readAddr.value.integer >= 0x8000 and dut.readAddr.value.integer <= 0x803C and dut.readAddr.value.integer & 0x3 == 0):
+					fullIndex = (dut.readAddr.value - 0x8000) >> 2
+					dut.dataIn.value = matrixData[(fullIndex & 0xC) >> 2][fullIndex & 0x3]
+				elif (dut.readAddr.value.integer >= 0xF000 and dut.readAddr.value.integer <= 0xF02C and dut.readAddr.value.integer & 0x3 == 0):
+					dut.dataIn.value = vectorData[(dut.readAddr.value - 0xF000) >> 2]
+				else:
+					dut.dataIn.value = 0xDEADBEEF
+
+			if (dut.writeEn.value.is_resolvable):
+				if (dut.writeEn.value == 1):
+					if (dut.writeAddr.value.is_resolvable):
+						dut.log.info("Write at " + str(dut.writeAddr.value.integer) + " of " + str(dut.writeData.value.integer))
+					else:
+						dut.log.error("Write requested with bad values")
+						assert False
+
+			await cocotb.triggers.ClockCycles(dut.clk, 1)
+	
+	'''
 	await cocotb.triggers.ClockCycles(dut.clk, 2)
 
 	assert dut.mp.controller.state.value.integer == 1
@@ -65,4 +119,5 @@ async def test(dut):
 
 	assert dut.mp.controller.state.value.integer == 2
 
-	await cocotb.triggers.ClockCycles(dut.clk, 20)
+	await cocotb.triggers.ClockCycles(dut.clk, 128)
+	'''

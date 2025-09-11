@@ -22,6 +22,8 @@ module matrixProcessorController (
 	typedef enum logic [1:0] {IDLE, LOADMATRIX, LOADVECTOR, PROCESSING} statetype;
 	statetype state, nextstate;
 
+	wire matrixMax = (matrixRegValue == 4'hF);
+
 	assign wiInit = (state == IDLE && start);
 
 	always @(*) begin
@@ -52,7 +54,7 @@ module matrixProcessorController (
 			end
 
 			LOADMATRIX: begin
-				if (matrixRegValue == 4'hF) nextstate = LOADVECTOR;
+				if (matrixMax) nextstate = LOADVECTOR;
 				else 						nextstate = LOADMATRIX;
 
 				wiSource = 0;
@@ -81,12 +83,13 @@ module matrixProcessorController (
 			end
 
 			PROCESSING: begin
-				if (workItemCountZero) nextstate = IDLE;
-				else 				   nextstate = PROCESSING;
+				if (workItemCountZero && matrixMax) 	nextstate = IDLE;
+				else if (matrixMax)						nextstate = LOADVECTOR;
+				else 									nextstate = PROCESSING;
 
-				wiSource = (matrixRegValue[1:0] == 4'hF);
+				wiSource = matrixMax;
 				writeEn = (matrixRegValue[1:0] == 2'h3);
-				load = 0;
+				load = 1;
 				loadMatrix = 0;
 				loadVector = 0;
 				matrixRegIncrument = 1;

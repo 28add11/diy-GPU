@@ -56,10 +56,13 @@ module matrixProcessorDatapath #(
 	wire [17:0] vectorReadIndex;
 	assign vectorReadIndex = {workItemReg, matrixReg[1:0]};
 	wire [17:0] vectorWriteIndex;
-	assign vectorWriteIndex = {workItemReg, matrixReg[3:2]};
+	assign vectorWriteIndex = {workItemReg, matrixRegPipeline[3:2]};
 
+	wire [WIDTH - 1:0] writeAddrInternal;
+	reg [WIDTH - 1:0] writeAddrPipeline;
 	assign readAddr = (readAddrSrc ? (dataInAddr) : matrixInAddr) + (readAddrSrc ? (vectorReadIndex << 2) : (matrixReg << 2));
-	assign writeAddr = dataOutAddr + vectorWriteIndex;
+	assign writeAddrInternal = dataOutAddr + vectorWriteIndex;
+	assign writeAddr = writeAddrPipeline;
 
 	assign writeEn = writeEnPipeline;
 
@@ -84,6 +87,11 @@ module matrixProcessorDatapath #(
 		if (~rst_n) begin
 			matrixReg <= 0;
 			matrixRegPipeline <= 0;
+			writeEnPipeline <= 0;
+			updateAccumulatorPipeline <= 0;
+			dataConsumePipeline <= 0;
+			loadMatrixPipeline <= 0;
+			loadVectorPipeline <= 0;
 
 		end else begin
 
@@ -113,6 +121,10 @@ module matrixProcessorDatapath #(
 				vectorCache[matrixRegPipeline] <= dataIn;
 			end
 			
+			if (controllerWriteEn) begin
+				writeAddrPipeline <= writeAddrInternal;
+			end
+
 			writeEnPipeline <= controllerWriteEn;
 			updateAccumulatorPipeline <= updateAccumulator;
 

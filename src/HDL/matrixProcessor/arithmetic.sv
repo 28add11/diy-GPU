@@ -16,9 +16,8 @@ module fuseMultAdd #(
 );
 	
 	reg signed [WIDTH - 1:0] accumulator;
-	assign accumulatorOut = accumulator;
 
-	reg signed [WIDTH - 1:0] productADD; // Maybe shift before ending up in this reg?? Only change if it doesn't meet timing
+	//reg signed [WIDTH - 1:0] productADD; // Maybe shift before ending up in this reg?? Only change if it doesn't meet timing
 
 	wire signed [(2 * WIDTH) - 1:0] product;
 	assign product = a * b;
@@ -26,12 +25,16 @@ module fuseMultAdd #(
 	wire signed [WIDTH - 1:0] accumulatorSrc;
 	assign accumulatorSrc = (updateAccumulator) ? seed : accumulator;
 
+	wire signed [WIDTH - 1:0] currentSum;
+	assign currentSum = accumulatorSrc + product;
+	assign accumulatorOut = currentSum;
+
 	always @(posedge clk) begin
 		if (~rst_n) begin
 			accumulator <= 0;
 		end else begin
 			if (en) begin
-				accumulator <= accumulatorSrc + product;
+				accumulator <= currentSum;
 			end
 		end
 	end

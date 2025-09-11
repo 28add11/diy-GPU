@@ -103,6 +103,7 @@ def displayTriangles(screen, vecArray, indexArrayIn, triCount):
 
 		while triBufferCount > 0: # In hardware is just ORs (UNSIGNED)
 
+			##### Clipping #####
 			goodToRender = True
 			vertices = triBuffer[triBufferCount - 1] # Get the current triangle vertices
 			triBufferCount -= 1
@@ -152,6 +153,8 @@ def displayTriangles(screen, vecArray, indexArrayIn, triCount):
 					elif v2delta < 0:
 						twoVertClipInterpolate(vertices, triBuffer, triBufferCount, [v0delta, v1delta, v2delta], 2)
 						triBufferCount += 1
+
+			##### Rasterization and edge function #####
 
 			if goodToRender:
 				vec1 = normalizeVec(vertices[0])

@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
-[*] Mon Sep 01 04:23:31 2025
+[*] Sun Sep 07 05:10:17 2025
 [*]
 [dumpfile] "C:\Users\kerba\Documents\Programs\diy-GPU\test\matProc\tb.fst"
-[dumpfile_mtime] "Mon Sep 01 04:22:10 2025"
-[dumpfile_size] 2054
+[dumpfile_mtime] "Thu Sep 04 03:10:56 2025"
+[dumpfile_size] 2116
 [savefile] "C:\Users\kerba\Documents\Programs\diy-GPU\test\matProc\gtkwaveconf.gtkw"
-[timestart] 125000
+[timestart] 230100
 [size] 1920 1009
 [pos] -1 -1
-*-16.000000 423100 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-16.000000 440000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [treeopen] tb.mp.
 [treeopen] tb.mp.datapath.
@@ -27,12 +27,12 @@ tb.mp.datapath.matrixReg[3:0]
 tb.start
 @22
 tb.mp.datapath.workItemReg[13:0]
-@29
-tb.writeEn
 @28
+tb.writeEn
 tb.mp.datapath.enFMA
 @22
 tb.mp.datapath.writeData[31:0]
+@23
 tb.mp.datapath.writeAddr[31:0]
 @28
 tb.mp.datapath.fma.updateAccumulator
