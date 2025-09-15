@@ -14,10 +14,10 @@ def create_perspective_projection_matrix(fov, near_plane, far_plane):
 	top = ((right - left) / 1.3333333333) / 2
 	bottom = -top
 	return [
-		[(2 * near_plane) / (right - left), 0, 0, 0],
-		[0, (2 * near_plane) / (top - bottom), 0, 0],
-		[(right + left) / (right - left), (top + bottom) / (top - bottom), -((far_plane + near_plane) / (far_plane - near_plane)), -1],
-		[0, 0, -((2 * far_plane * near_plane) / (far_plane - near_plane)), 0]
+		[(2 * near_plane) / (right - left), 0, (right + left) / (right - left), 0],
+		[0, (2 * near_plane) / (top - bottom), (top + bottom) / (top - bottom), 0],
+		[0, 0, -((far_plane + near_plane) / (far_plane - near_plane)), -((2 * far_plane * near_plane) / (far_plane - near_plane))],
+		[0, 0, -1, 0]
 	]
 
 pygame.init()
@@ -64,22 +64,22 @@ while running:
 	
 	keys = pygame.key.get_pressed()
 	if keys[pygame.K_w]:
-		worldToCamMat[3][2] += 0.1
+		worldToCamMat[2][3] += 0.1
 	if keys[pygame.K_s]:
-		worldToCamMat[3][2] -= 0.1
+		worldToCamMat[2][3] -= 0.1
 	if keys[pygame.K_a]:
-		worldToCamMat[3][0] += 0.1
+		worldToCamMat[0][3] += 0.1
 	if keys[pygame.K_d]:
-		worldToCamMat[3][0] -= 0.1
+		worldToCamMat[0][3] -= 0.1
 	if keys[pygame.K_q]:
-		worldToCamMat[3][1] += 0.1
+		worldToCamMat[1][3] += 0.1
 	if keys[pygame.K_e]:
-		worldToCamMat[3][1] -= 0.1
+		worldToCamMat[1][3] -= 0.1
 
 	screen.fill((0, 0, 0))
 
 	projMat = create_perspective_projection_matrix(90, 0.1, 1000)
-	gpu.fourxfourmatmul(worldToCamMat, projMat, projMat)
+	gpu.fourxfourmatmul(projMat, worldToCamMat, projMat)
 
 	gpu.projectVertices(vertices, transformedVerts, projMat)
 

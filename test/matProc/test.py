@@ -16,10 +16,10 @@ def multVecMatrix(matrix, vec):
 	"""
 
 	listResult = [0.0 for i in range(4)]
-	listResult[0] = matrix[0][0] * vec[0] + matrix[1][0] * vec[1] + matrix[2][0] * vec[2] + matrix[3][0] * vec[3]
-	listResult[1] = matrix[0][1] * vec[0] + matrix[1][1] * vec[1] + matrix[2][1] * vec[2] + matrix[3][1] * vec[3]
-	listResult[2] = matrix[0][2] * vec[0] + matrix[1][2] * vec[1] + matrix[2][2] * vec[2] + matrix[3][2] * vec[3]
-	listResult[3] = matrix[0][3] * vec[0] + matrix[1][3] * vec[1] + matrix[2][3] * vec[2] + matrix[3][3] * vec[3]
+	listResult[0] = matrix[0][0] * vec[0] + matrix[0][1] * vec[1] + matrix[0][2] * vec[2] + matrix[0][3] * vec[3]
+	listResult[1] = matrix[1][0] * vec[0] + matrix[1][1] * vec[1] + matrix[1][2] * vec[2] + matrix[1][3] * vec[3]
+	listResult[2] = matrix[2][0] * vec[0] + matrix[2][1] * vec[1] + matrix[2][2] * vec[2] + matrix[2][3] * vec[3]
+	listResult[3] = matrix[3][0] * vec[0] + matrix[3][1] * vec[1] + matrix[3][2] * vec[2] + matrix[3][3] * vec[3]
 
 	return listResult
 
@@ -76,20 +76,30 @@ async def test(dut):
 
 	matrixData = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
 	vectorData = [1, 1, 10, 1]
+	result = [0, 0, 0, 0]
 	
-	for randTestCase in range(2):
+	for randTestCase in range(5000):
+
+		testCasesGood = 0
+		loopCountFail = 0
 
 		for j in range(4): # Row
 			for i in range(4): # Column
-				matrixData[j][i] = randint(-(2**16), 2**16)
+				matrixData[j][i] = randint(-(2**15), 2**15)
 		
 		for i in range(4):
-			vectorData[i] = randint(-(2**16), 2**16)
+			vectorData[i] = randint(-(2**15), 2**15)
 
-		dut.start.value = 1 # We never set this to zero but its good
-		await cocotb.triggers.ClockCycles(dut.clk, 1)
+		result = multVecMatrix(matrixData, vectorData)
 
-		while dut.mp.controller.state.value.integer != 0:
+		print("matrix:\t" + str(matrixData) + "\nVector:\t" + str(vectorData) + "\nResult:\t" + str(result))
+
+		dut.start.value = 1 
+		await cocotb.triggers.ClockCycles(dut.clk, 1) # Required for synchronization
+		await cocotb.triggers.RisingEdge(dut.mp.controller.load) # Raises on state transition to loadmatrix
+		dut.start.value = 0
+
+		while testCasesGood != 4 and loopCountFail <= 48:
 
 			if (dut.readAddr.value.is_resolvable):
 				if (dut.readAddr.value.integer >= 0x8000 and dut.readAddr.value.integer <= 0x803C and dut.readAddr.value.integer & 0x3 == 0):
@@ -103,13 +113,22 @@ async def test(dut):
 			if (dut.writeEn.value.is_resolvable):
 				if (dut.writeEn.value == 1):
 					if (dut.writeAddr.value.is_resolvable):
-						dut.log.info("Write at " + str(dut.writeAddr.value.integer) + " of " + str(dut.writeData.value.integer))
+						if (dut.writeData.value.signed_integer != result[dut.writeAddr.value.integer]):
+							dut.log.info("Write at " + str(dut.writeAddr.value.integer) + " of " + str(dut.writeData.value.signed_integer))
+							dut.log.error("Incorrect return values")
+							assert False
+
+						else:
+							testCasesGood += 1
+
 					else:
 						dut.log.error("Write requested with bad values")
 						assert False
 
+			loopCountFail += 1
 			await cocotb.triggers.ClockCycles(dut.clk, 1)
 	
+	await cocotb.triggers.ClockCycles(dut.clk, 1)
 	'''
 	await cocotb.triggers.ClockCycles(dut.clk, 2)
 

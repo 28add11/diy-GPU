@@ -70,7 +70,7 @@ module matrixProcessorDatapath #(
 	assign matrixRegValue = matrixReg;
 
 	wire [WIDTH - 1:0] debug;
-	assign debug = vectorCache[3];
+	assign debug = vectorCache[0];
 
 	fuseMultAdd #(.WIDTH(WIDTH)) fma(
 		.clk(clk),
