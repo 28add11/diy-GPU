@@ -19,7 +19,7 @@ module matrixProcessorController (
 	output logic enFMA
 	);
 
-	typedef enum logic [1:0] {IDLE, LOADMATRIX, LOADVECTOR, PROCESSING} statetype;
+	typedef enum logic [2:0] {IDLE, LOADMATRIX, LOADVECTOR, PROCESSING, NORMALIZE} statetype;
 	statetype state, nextstate;
 
 	wire matrixMax = (matrixRegValue == 4'hF);

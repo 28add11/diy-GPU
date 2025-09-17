@@ -75,24 +75,77 @@ async def test(dut):
 	dut.start.value = 1
 
 	matrixData = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+	tempBatchVectorData = [randint(-23170, 23170) for i in range(16)]
+	tempBatchResult = [0 for i in range(16)]
 	vectorData = [1, 1, 10, 1]
 	result = [0, 0, 0, 0]
 	
-	for randTestCase in range(5000):
+	# Testing outside loop since batch processing shouldn't need start
+	dut.workItemCount.value = 3
+	dut.start.value = 1 
+	await cocotb.triggers.ClockCycles(dut.clk, 1) # Required for synchronization
+	await cocotb.triggers.RisingEdge(dut.mp.controller.load) # Raises on state transition to loadmatrix
+	dut.start.value = 0
+
+	for batchVectorTests in range(1):
+
+		testCasesGood = 0
+		loopCountFail = 0
+
+		tempBatchResult = tempBatchVectorData
+
+		while testCasesGood < 16  and loopCountFail <= 100:
+
+			if (dut.readAddr.value.is_resolvable):
+				if (dut.readAddr.value.integer >= 0x8000 and dut.readAddr.value.integer <= 0x803C and dut.readAddr.value.integer & 0x3 == 0):
+					fullIndex = (dut.readAddr.value - 0x8000) >> 2
+					dut.dataIn.value = matrixData[(fullIndex & 0xC) >> 2][fullIndex & 0x3]
+				elif (dut.readAddr.value.integer >= 0xF000 and dut.readAddr.value.integer <= 0xF03C and dut.readAddr.value.integer & 0x3 == 0):
+					dut.dataIn.value = tempBatchVectorData[(dut.readAddr.value - 0xF000) >> 2]
+				else:
+					dut.dataIn.value = 0xDEADBEEF
+
+			if (dut.writeEn.value.is_resolvable):
+				if (dut.writeEn.value == 1):
+					if (dut.writeAddr.value.is_resolvable):
+						if (dut.writeData.value.signed_integer != tempBatchResult[(dut.writeAddr.value.integer)]):
+							dut.log.info("matrix:\t" + str(matrixData) + "\nVector:\t" + str(tempBatchVectorData))
+							dut.log.info("Write at " + str(dut.writeAddr.value.integer) + " of " + str(dut.writeData.value.signed_integer))
+							dut.log.error("Incorrect return values")
+							assert False
+
+						else:
+							testCasesGood += 1
+
+					else:
+						dut.log.error("Write requested with bad values")
+						assert False
+
+			loopCountFail += 1
+			await cocotb.triggers.ClockCycles(dut.clk, 1)
+	
+		if loopCountFail > 100:
+			print("Surpassed loop max")
+			assert False;
+	
+	await cocotb.triggers.ClockCycles(dut.clk, 1)
+
+
+	dut.workItemCount.value = 0
+
+	for randTestCase in range(30):
 
 		testCasesGood = 0
 		loopCountFail = 0
 
 		for j in range(4): # Row
 			for i in range(4): # Column
-				matrixData[j][i] = randint(-(2**15), 2**15)
+				matrixData[j][i] = randint(-23170, 23170)
 		
 		for i in range(4):
-			vectorData[i] = randint(-(2**15), 2**15)
+			vectorData[i] = randint(-23170, 23170)
 
 		result = multVecMatrix(matrixData, vectorData)
-
-		print("matrix:\t" + str(matrixData) + "\nVector:\t" + str(vectorData) + "\nResult:\t" + str(result))
 
 		dut.start.value = 1 
 		await cocotb.triggers.ClockCycles(dut.clk, 1) # Required for synchronization
@@ -114,6 +167,7 @@ async def test(dut):
 				if (dut.writeEn.value == 1):
 					if (dut.writeAddr.value.is_resolvable):
 						if (dut.writeData.value.signed_integer != result[dut.writeAddr.value.integer]):
+							dut.log.info("matrix:\t" + str(matrixData) + "\nVector:\t" + str(vectorData) + "\nResult:\t" + str(result))
 							dut.log.info("Write at " + str(dut.writeAddr.value.integer) + " of " + str(dut.writeData.value.signed_integer))
 							dut.log.error("Incorrect return values")
 							assert False
