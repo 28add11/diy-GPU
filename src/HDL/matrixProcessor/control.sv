@@ -146,17 +146,17 @@ module matrixProcessorController (
 			end
 
 			NORMALIZE: begin
-				if (workItemCountZero && coordsMax) 	nextstate = IDLE;
-				else if (coordsMax)						nextstate = LOADVECTOR;
+				if (workItemCountZero && vectorMax) 	nextstate = IDLE;
+				else if (vectorMax)						nextstate = LOADVECTOR;
 				else 									nextstate = NORMALIZE;
 
-				wiSource = coordsMax;
+				wiSource = vectorMax;
 				writeEn = 1;
 				load = 0;
 				loadMatrix = 0;
 				loadVector = 0;
 				matrixRegIncrument = 1;
-				resetMatrixReg = coordsMax;
+				resetMatrixReg = vectorMax;
 				readAddrSrc = 0;
 				enFMA = 1;
 				pmvcWriteEn = 0;

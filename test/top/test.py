@@ -84,12 +84,8 @@ async def test(dut):
 	for i in range(len(fpVerts)):
 		resultVerts[i] = multVecMatrix(projMat, fpVerts[i])
 
-	print("Expected postmult verts" + str(resultVerts))
-
 	for i in range(len(fpVerts)):
 		resultVerts[i] = normalizeVec(resultVerts[i])
-		
-	print("Expected postnormal verts" + str(resultVerts))
 
 	# Set the clock period to 10 ns (100 MHz)
 	clock = Clock(dut.clk, 10, units="ns")
@@ -143,7 +139,6 @@ async def test(dut):
 					if (dut.writeAddr.value.is_resolvable):
 						# Convert back to float
 						returnedVerts[dut.writeAddr.value.integer >> 2][dut.writeAddr.value.integer % 4] = (dut.writeData.value.signed_integer / (2**16))
-						print(dut.writeData.value.signed_integer, returnedVerts[dut.writeAddr.value.integer >> 2][dut.writeAddr.value.integer % 4])
 
 						if (dut.writeData.value.signed_integer != resultVerts[dut.writeAddr.value.integer >> 2][dut.writeAddr.value.integer % 4]):
 							if (dut.writeAddr.value.integer % 4 != 3):
@@ -166,4 +161,4 @@ async def test(dut):
 			dut.log.error("Surpassed loop max")
 			assert False;
 
-	print(returnedVerts)
+	dut.log.info(returnedVerts)

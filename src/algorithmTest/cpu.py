@@ -82,8 +82,6 @@ while running:
 
 	gpu.projectVertices(vertices, transformedVerts, projMat)
 
-	culledIndices = [[0 for i in range(3)] for j in range(len(indices) + 20)] # Extra buffer in case we generate more triangles during culling
-
 	gpu.displayTriangles(screen, transformedVerts, indices, len(indices))
 
 	#culledTriCount = gpu.cullTriangles(transformedVerts, indices, culledIndices, len(indices))

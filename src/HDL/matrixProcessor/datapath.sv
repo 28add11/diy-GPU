@@ -82,7 +82,7 @@ module matrixProcessorDatapath #(
 	assign nonVecMultInput = load ? matrixReadReg : quotient;
 	assign vecMultInput = load ? vectorReadReg : postMultVecCache[matrixRegPipeline[1:0]];
 
-	wire [WIDTH - 1:0] debug = postMultVecCache[0];
+	wire [WIDTH - 1:0] debug = postMultVecCache[matrixRegPipeline[1:0]];
 
 	fuseMultAdd #(.WIDTH(WIDTH)) fma(
 		.clk(clk),
@@ -131,7 +131,6 @@ module matrixProcessorDatapath #(
 			end
 
 			if (load) begin
-				matrixRegPipeline <= matrixReg;
 				dataConsumePipeline <= 1;
 				loadMatrixPipeline <= loadMatrix;
 				loadVectorPipeline <= loadVector;
@@ -154,6 +153,7 @@ module matrixProcessorDatapath #(
 				postMultVecCache[matrixRegPipeline[3:2]] <= multResult;
 			end 
 
+			matrixRegPipeline <= matrixReg;
 			writeEnPipeline <= controllerWriteEn;
 			updateAccumulatorPipeline <= updateAccumulator;
 			pmvcWriteEnPipeline <= pmvcWriteEn;

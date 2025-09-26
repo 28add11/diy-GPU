@@ -1,6 +1,6 @@
-# Testbenches for Mersenne Prime factoring HDL
+# Testbenches for Vector Processor HDL
 
-This directory contains the testbenches for the Mersenne prime factoring HDL. It uses [Cocotb](https://www.cocotb.org/) to run all the tests, which are split up individually per component. Since the files can get large, eventually I want to add functionality to include or exclude the generated .fst files through the commands, and add different categories of tests for different things that change. 
+This directory contains the testbenches for the vector processor. It uses [Cocotb](https://www.cocotb.org/) to run all the tests, which are split up individually per component. Since the files can get large, eventually I want to add functionality to include or exclude the generated .fst files through the commands, and add different categories of tests for different things that change. 
 
 ## Structure
 
@@ -18,7 +18,7 @@ The `-j` flag is to run multiple tests in parallel, which greatly improves speed
 
 To run just one test:
 ```
-make -B [Test (such as full)]
+make -B [Test (such as top)]
 ```
 
 ## Viewing results
