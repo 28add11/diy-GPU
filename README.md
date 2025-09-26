@@ -3,7 +3,7 @@
 This project is a simple FSM driven vector processor for use in 3D graphics. It implements matrix-vector postmultiplication and then normalization with a w coordinate, which is the first steps in a 3D graphics pipeline. 
 It is not programmable (Though hopefully that'll change in v2) however it is capable of (Insert speed here!).
 
-![the final 3D render of a cube](renderedCube.png)
+![the final 3D render of a cube]([renderedCube.png](https://github.com/28add11/diy-GPU/blob/main/renderedCube.png?raw=true))
 
 This project was submitted for [Hack Club's Summer of Making](https://summer.hackclub.com/), a summer-long program where teenagers can get rewards for making things!
 The process of making this was a big learning experience, and although there are many ways it can be improved, I'm still very proud of it. Eventually, I would love to integrate it into a full video game console and share it with the world.
