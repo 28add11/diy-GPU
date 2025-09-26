@@ -17,6 +17,8 @@ module matrixProcessorDatapath #(
 	input wire readAddrSrc,
 	input wire enFMA,
 	input wire controllerWriteEn,
+	input wire pmvcWriteEn,
+	input wire startDiv,
 
 	input wire [13:0] workItemCount, // > 10k, about the number of verts we want to push per frame. Feel free to raise once I get actual performance numbers on this
 	input wire [WIDTH - 1:0] matrixInAddr, // Presuming these are registered because of AXI???
@@ -28,7 +30,8 @@ module matrixProcessorDatapath #(
 	output wire [WIDTH - 1:0] writeData,
 	output wire workItemCountZero,
 	output wire [3:0] matrixRegValue,
-	output wire writeEn
+	output wire writeEn,
+	output wire divFinished
 	);
 
 	reg [13:0] workItemReg;
@@ -46,17 +49,19 @@ module matrixProcessorDatapath #(
 	reg writeEnPipeline;
 	wire updateAccumulator;
 	reg updateAccumulatorPipeline;
-	assign updateAccumulator = (matrixReg[1:0] == 0);
+	reg pmvcWriteEnPipeline;
+	assign updateAccumulator = load ? (matrixReg[1:0] == 0) : 1;
 
 	reg [WIDTH - 1:0] matrixCache [15:0]; // 4x4 matrix cache (Implemented as 1D array because IIRC some tools have compatability issues)
 	reg [WIDTH - 1:0] vectorCache [3:0]; // 1x4 vector
+	reg [WIDTH - 1:0] postMultVecCache [3:0]; // Won't infer as BRAM since we want to use two values at once from here (normalization)
 	reg [WIDTH - 1:0] matrixReadReg;
 	reg [WIDTH - 1:0] vectorReadReg;
 
 	wire [17:0] vectorReadIndex;
 	assign vectorReadIndex = {workItemReg, matrixReg[1:0]};
 	wire [17:0] vectorWriteIndex;
-	assign vectorWriteIndex = {workItemReg, matrixRegPipeline[3:2]};
+	assign vectorWriteIndex = {workItemReg, matrixReg[1:0]};
 
 	wire [WIDTH - 1:0] writeAddrInternal;
 	reg [WIDTH - 1:0] writeAddrPipeline;
@@ -64,23 +69,43 @@ module matrixProcessorDatapath #(
 	assign writeAddrInternal = dataOutAddr + vectorWriteIndex;
 	assign writeAddr = writeAddrPipeline;
 
+	assign writeData = multResult;
+
 	assign writeEn = writeEnPipeline;
 
 	assign workItemCountZero = (workItemReg == 0);
 	assign matrixRegValue = matrixReg;
 
-	wire [WIDTH - 1:0] debug;
-	assign debug = vectorCache[0];
+	wire [WIDTH - 1:0] multResult;
+	wire [WIDTH - 1:0] nonVecMultInput;
+	wire [WIDTH - 1:0] vecMultInput;
+	assign nonVecMultInput = load ? matrixReadReg : quotient;
+	assign vecMultInput = load ? vectorReadReg : postMultVecCache[matrixRegPipeline[1:0]];
+
+	wire [WIDTH - 1:0] debug = postMultVecCache[0];
 
 	fuseMultAdd #(.WIDTH(WIDTH)) fma(
 		.clk(clk),
 		.rst_n(rst_n),
-		.a(matrixReadReg),
-		.b(vectorReadReg),
-		.accumulatorOut(writeData),
+		.a(nonVecMultInput),
+		.b(vecMultInput),
+		.scaleFactor(5'd16),
+		.accumulatorOut(multResult),
 		.seed(0),
 		.updateAccumulator(updateAccumulatorPipeline),
 		.en(enFMA)
+	);
+
+	wire [WIDTH - 1:0] quotient;
+
+	divider #(.WIDTH(WIDTH)) div(
+		.clk(clk),
+		.rst_n(rst_n),
+		.start(startDiv),
+		.numerator(32'h10000),
+		.denominator(multResult),
+		.quotient(quotient),
+		.finished(divFinished)
 	);
 
 	always @(posedge clk) begin
@@ -125,9 +150,13 @@ module matrixProcessorDatapath #(
 				writeAddrPipeline <= writeAddrInternal;
 			end
 
+			if (pmvcWriteEnPipeline) begin
+				postMultVecCache[matrixRegPipeline[3:2]] <= multResult;
+			end 
+
 			writeEnPipeline <= controllerWriteEn;
 			updateAccumulatorPipeline <= updateAccumulator;
-
+			pmvcWriteEnPipeline <= pmvcWriteEn;
 			matrixReadReg <= matrixCache[matrixReg];
 			vectorReadReg <= vectorCache[matrixReg[1:0]];
 		end

@@ -16,17 +16,17 @@ module divider #(
 	parameter DIVIDE = 1'b1;
 
 	reg signCorrect;
-	reg [WIDTH - 1:0] quotientInternal;
-	reg [WIDTH - 1:0] dividendSignCorrect;
+	reg [(WIDTH * 2) - 1:0] quotientInternal;
+	reg [(WIDTH * 2) - 1:0] dividendSignCorrect; // Extra precision fixed point
 	reg [WIDTH - 1:0] divisorSignCorrect;
 	reg [WIDTH - 1:0] remainder;
 	wire [WIDTH - 1:0] nextRemainder;
 
-	assign quotient = (signCorrect ? ~quotientInternal + 1 : quotientInternal);
-
+	assign quotient = signCorrect ? (~(quotientInternal[WIDTH - 1:0])) + 1 : quotientInternal[31:0];
+	
 	reg state;
-	// Minimum bit width to store value from 0 to WIDTH
-	reg [$clog2(WIDTH) - 1:0] count;
+	// Minimum bit width to store value from 0 to WIDTH with the additional bits for fixed point
+	reg [$clog2(WIDTH * 2) - 1:0] count;
 
 	assign finished = ~state;
 	assign nextRemainder = {remainder, dividendSignCorrect[count]};
@@ -38,9 +38,9 @@ module divider #(
 
 		if (start) begin // Initialize everything to starting values
 			state <= DIVIDE;
-			count <= WIDTH - 1;
+			count <= (WIDTH * 2) - 1;
 			signCorrect <= numerator[31] ^ denominator[31];
-			dividendSignCorrect <= (numerator[31] ? ~numerator + 1 : numerator);
+			dividendSignCorrect <= (numerator[31] ? ~numerator + 1 : numerator) << 16;
 			divisorSignCorrect <= (denominator[31] ? ~denominator + 1 : denominator);
 			remainder <= 0;
 			quotientInternal <= 0;

@@ -18,7 +18,7 @@ module matrixProcessor #(
 	output wire writeEn
 	);
 
-	wire controllerWriteEn;
+	wire controllerWriteEn, pmvcWriteEn;
 	wire wiSource, wiInit;
 	wire workItemCountZero;
 	wire [3:0] matrixRegValue;
@@ -26,6 +26,8 @@ module matrixProcessor #(
 	wire load, loadMatrix, loadVector;
 	wire readAddrSrc;
 	wire enFMA;
+	wire startDiv;
+	wire divFinished;
 
 	matrixProcessorDatapath #(.WIDTH(WIDTH)) datapath (
 		.clk(clk),
@@ -51,7 +53,10 @@ module matrixProcessor #(
 		.readAddrSrc(readAddrSrc),
 		.enFMA(enFMA),
 		.controllerWriteEn(controllerWriteEn),
-		.writeEn(writeEn)
+		.pmvcWriteEn(pmvcWriteEn),
+		.writeEn(writeEn),
+		.startDiv(startDiv),
+		.divFinished(divFinished)
 	);
 
 	matrixProcessorController controller (
@@ -60,8 +65,10 @@ module matrixProcessor #(
 		.start(start),
 		.workItemCountZero(workItemCountZero),
 		.matrixRegValue(matrixRegValue),
+		.divFinished(divFinished),
 		.matrixRegIncrument(matrixRegIncrument),
 		.writeEn(controllerWriteEn),
+		.pmvcWriteEn(pmvcWriteEn),
 		.wiSource(wiSource),
 		.wiInit(wiInit),
 		.load(load),
@@ -69,7 +76,8 @@ module matrixProcessor #(
 		.loadVector(loadVector),
 		.resetMatrixReg(resetMatrixReg),
 		.readAddrSrc(readAddrSrc),
-		.enFMA(enFMA)
+		.enFMA(enFMA),
+		.startDiv(startDiv)
 	);
 
 endmodule

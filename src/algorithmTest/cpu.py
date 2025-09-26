@@ -50,11 +50,10 @@ indices = [[5, 3, 1],
 transformedVerts = [[0 for i in range(4)] for i in range(len(vertices))] # Nested list comprehensions are pretty... this is to accomadate the w coord before normalization
 normalizedVerts = [0 for i in range(len(vertices))]
 
-worldToCamMat = [
-	[1.0, 0.0, 0.0, 0.0],
-	[0.0, 1.0, 0.0, 0.0],
-	[0.0, 0.0, 1.0, 0.0],
-	[0.0, 0.0, 0.0, 1.0]]
+worldToCamMat = [[1.0, 0.0, 0.0, 2.4], 
+				 [0.0, 1.0, 0.0, -1.9], 
+				 [0.0, 0.0, 1.0, -5.29], 
+				 [0.0, 0.0, 0.0, 1.0]]
 
 while running:
 
@@ -82,7 +81,6 @@ while running:
 	gpu.fourxfourmatmul(projMat, worldToCamMat, projMat)
 
 	gpu.projectVertices(vertices, transformedVerts, projMat)
-
 
 	culledIndices = [[0 for i in range(3)] for j in range(len(indices) + 20)] # Extra buffer in case we generate more triangles during culling
 

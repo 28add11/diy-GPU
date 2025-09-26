@@ -8,6 +8,7 @@ module fuseMultAdd #(
 	// Arithmetic signals
 	input wire signed [WIDTH - 1:0] a,
 	input wire signed [WIDTH - 1:0] b,
+	input wire signed [$clog2(WIDTH) - 1:0] scaleFactor,
 	output wire signed [WIDTH - 1:0] accumulatorOut,
 	input wire signed [WIDTH - 1:0] seed,
 	// Control signals
@@ -20,13 +21,15 @@ module fuseMultAdd #(
 	//reg signed [WIDTH - 1:0] productADD; // Maybe shift before ending up in this reg?? Only change if it doesn't meet timing
 
 	wire signed [(2 * WIDTH) - 1:0] product;
+	wire signed [WIDTH - 1:0] shiftResult;
 	assign product = a * b;
+	assign shiftResult = product >>> scaleFactor;
 
 	wire signed [WIDTH - 1:0] accumulatorSrc;
 	assign accumulatorSrc = (updateAccumulator) ? seed : accumulator;
 
 	wire signed [WIDTH - 1:0] currentSum;
-	assign currentSum = accumulatorSrc + product;
+	assign currentSum = accumulatorSrc + shiftResult;
 	assign accumulatorOut = currentSum;
 
 	always @(posedge clk) begin
